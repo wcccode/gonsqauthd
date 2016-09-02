@@ -8,24 +8,12 @@ import (
 
 var FileNotFound = errors.New("file not fount")
 
-type Auth struct {
-	Ttl            int            `json: "ttl"`
-	Identity       string         `json: "identity"`
-	IdentityUrl    string         `json: "identity_url"`
-	Authorizations Authorizations `json: "authorizations"`
-}
-
-type Authorizations struct {
-	Permissions []string `json: "permissions"`
-	Topic       string   `json: "topic"`
-	Channels    []string `json: "channels"`
-}
-
-//auth db
+// AuthDb represents auth's info data source
 type AuthDb struct {
-	records [][]string
+	entries [][]string
 }
 
+// new AuthDb and initiation entries
 func NewAuthDb(filePath string) *AuthDb {
 	db := &AuthDb{}
 	err := db.init(filePath)
@@ -35,6 +23,9 @@ func NewAuthDb(filePath string) *AuthDb {
 	return db
 }
 
+// init file and read entries
+// file content is
+// login,ip,tls_required,topic,channel,subscribe,publish
 func (db *AuthDb) init(filePath string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -45,19 +36,17 @@ func (db *AuthDb) init(filePath string) error {
 	}
 
 	r := csv.NewReader(f)
-	records, err := r.ReadAll()
+	entries, err := r.ReadAll()
 	if err != nil {
 		return err
 	}
 
-	db.records = records
+	db.entries = entries
 	return nil
 }
 
-func (db *AuthDb) Get(login, ip, tlsRequired string) *Auth {
-	auth := &Auth{Ttl: 3600, Identity: "nsqauthd", IdentityUrl: ""}
-
-	for _, elm := range db.records {
+func (db *AuthDb) Get(login, ip, tlsRequired string) []string {
+	for _, elm := range db.entries {
 		if len(elm) < 3 {
 			continue
 		}
@@ -65,9 +54,9 @@ func (db *AuthDb) Get(login, ip, tlsRequired string) *Auth {
 			return elm
 		}
 	}
-	return auth
+	return nil
 }
 
 func (db *AuthDb) List() [][]string {
-	return db.records
+	return db.entries
 }

@@ -4,4 +4,5 @@ type Options struct {
 	Port         int
 	AuthFilePath string
 	Log          Logger
+	Ttl          int
 }

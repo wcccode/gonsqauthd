@@ -8,7 +8,7 @@ import (
 
 type NsqAuthd struct {
 	Opts *Options
-	Db   *AuthDb
+	Db   DB
 }
 
 func NewNsqAuthd(opts *Options) *NsqAuthd {

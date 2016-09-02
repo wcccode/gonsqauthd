@@ -17,14 +17,12 @@ var getTable = []struct {
 }
 
 func TestAuthDbList(t *testing.T) {
-	db := &AuthDb{}
-	db.Init(filePath)
+	db := NewAuthDb(filePath)
 	fmt.Println(db.List())
 }
 
 func TestAuthDbGet(t *testing.T) {
-	db := &AuthDb{}
-	db.Init(filePath)
+	db := NewAuthDb(filePath)
 	for _, elm := range getTable {
 		r := db.Get(elm.Login, elm.Ip, elm.TlsRequired)
 		fmt.Println(r)
