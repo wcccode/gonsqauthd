@@ -10,7 +10,7 @@ var FileNotFound = errors.New("file not fount")
 
 // AuthDb represents auth's info data source
 type AuthDb struct {
-	entries [][]string
+	entries []Entry
 }
 
 // new AuthDb and initiation entries
@@ -36,27 +36,45 @@ func (db *AuthDb) init(filePath string) error {
 	}
 
 	r := csv.NewReader(f)
-	entries, err := r.ReadAll()
+	records, err := r.ReadAll()
 	if err != nil {
 		return err
 	}
 
+	if len(records) > 0 {
+		records = records[1:]
+	}
+
+	entries := make([]Entry, 0, 10)
+	for _, record := range records {
+		tlsRequired := false
+		if record[2] == "true" {
+			tlsRequired = true
+		}
+		entry := Entry{Login: record[0], Ip: record[1], TlsRequired: tlsRequired, Topic: record[3], Channel: record[4], Subscribe: record[5], Publish: record[6]}
+		entries = append(entries, entry)
+	}
 	db.entries = entries
 	return nil
 }
 
-func (db *AuthDb) Get(login, ip, tlsRequired string) []string {
-	for _, elm := range db.entries {
-		if len(elm) < 3 {
+func (db *AuthDb) Get(login, ip string, tlsRequired bool) []Entry {
+	entries := make([]Entry, 0, 1)
+	for _, entry := range db.entries {
+		if entry.Login != "" && entry.Login != login {
 			continue
 		}
-		if login == elm[0] && ip == elm[1] && tlsRequired == elm[2] {
-			return elm
+		if entry.Ip != "" && entry.Ip != ip {
+			continue
 		}
+		if entry.TlsRequired && !tlsRequired {
+			continue
+		}
+		entries = append(entries, entry)
 	}
-	return nil
+	return entries
 }
 
-func (db *AuthDb) List() [][]string {
+func (db *AuthDb) List() []Entry {
 	return db.entries
 }

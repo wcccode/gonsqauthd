@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type httpServer struct {
@@ -53,13 +55,25 @@ type authorizations struct {
 func (s *httpServer) auth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	secret := r.FormValue("secret")
 	ip := r.FormValue("remote_ip")
-	tls := r.FormValue("tls")
+	tls, err := strconv.ParseBool(r.FormValue("tls"))
+
+	if err != nil {
+		return nil, Error{Code: 500, Text: err.Error()}
+	}
+
 	s.ctx.nsqAuthd.Opts.Log.Output(2, fmt.Sprintf("auth request with secret: %v, remote_ip: %v, tls: %v", secret, ip, tls))
 
 	entries := s.ctx.nsqAuthd.Db.Get(secret, ip, tls)
 	auths := make([]authorizations, 0, 1)
-	if entries != nil {
-		auths = append(auths, authorizations{Topic: entries[3], Channels: entries[4:5], Permissions: entries[5:]})
+	for _, entry := range entries {
+		permiss := make([]string, 0, 2)
+		if entry.Subscribe != "" {
+			permiss = append(permiss, entry.Subscribe)
+		}
+		if entry.Publish != "" {
+			permiss = append(permiss, entry.Publish)
+		}
+		auths = append(auths, authorizations{Topic: entry.Topic, Channels: strings.Split(entry.Channel, ","), Permissions: permiss})
 	}
 	return &authInfo{Ttl: s.ctx.nsqAuthd.Opts.Ttl, Identity: "nsqauthd", IdentityUrl: "", Authorizations: auths}, nil
 }
