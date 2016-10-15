@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var FileNotFound = errors.New("file not fount")
+var ErrFileNotFound = errors.New("file not fount")
 
 // AuthDb represents auth's info data source
 type AuthDb struct {
@@ -30,10 +30,11 @@ func (db *AuthDb) init(filePath string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return FileNotFound
+			return ErrFileNotFound
 		}
 		return err
 	}
+	defer f.Close()
 
 	r := csv.NewReader(f)
 	records, err := r.ReadAll()
